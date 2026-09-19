@@ -45,7 +45,7 @@
     --warn-border: #d97706;
     --warn-text: #fdba74;
   }
-
+ 
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -57,7 +57,7 @@
   .wrap { max-width: 980px; margin: 0 auto; }
   h1 { font-size: 1.4rem; margin: 0 0 4px; }
   .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 0.92rem; }
-
+ 
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -65,7 +65,7 @@
     padding: 20px;
     margin-bottom: 20px;
   }
-
+ 
   #dropzone {
     border: 2px dashed var(--border);
     border-radius: 10px;
@@ -82,9 +82,9 @@
   #dropzone .big { font-size: 1rem; }
   #dropzone .small { font-size: 0.85rem; color: var(--muted); }
   #fileInput { display: none; }
-
+ 
   #fileInfo { font-size: 0.9rem; color: var(--muted); margin-top: 10px; display: none; }
-
+ 
   .settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -111,14 +111,14 @@
   }
   input[type="range"] { width: 100%; }
   .range-val { font-size: 0.78rem; color: var(--muted); }
-
+ 
   details > summary {
     cursor: pointer;
     font-weight: 600;
     padding: 4px 0;
     user-select: none;
   }
-
+ 
   button {
     background: var(--accent);
     color: white;
@@ -137,12 +137,12 @@
     border: 1px solid var(--border);
   }
   button.secondary:hover { background: var(--bg); }
-
+ 
   .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-
+ 
   #chartCard { display: none; }
   #chartDiv { width: 100%; height: 520px; }
-
+ 
   .warn {
     background: var(--warn-bg);
     border: 1px solid var(--warn-border);
@@ -154,7 +154,7 @@
     display: none;
     white-space: pre-line;
   }
-
+ 
   .detected {
     font-size: 0.85rem;
     color: var(--muted);
@@ -168,7 +168,7 @@
 <div class="wrap">
   <h1>📈 Gerador de Gráfico PK</h1>
   <p class="subtitle">Anexe um arquivo .xlsx (exportado do PK-Sim/MoBi) e o gráfico é gerado automaticamente — sem editar nada. Funciona com qualquer arquivo no mesmo formato, independente do nome das curvas ou da unidade.</p>
-
+ 
   <div class="card">
     <div id="dropzone">
       <p class="big">📎 Clique aqui ou arraste o arquivo .xlsx</p>
@@ -179,9 +179,16 @@
     <div class="detected" id="detected"></div>
     <div class="warn" id="warnBox"></div>
   </div>
-
+ 
   <div class="card" id="settingsCard" style="display:none;">
     <details open>
+      <summary>🏷️ Legenda (renomear)</summary>
+      <div class="settings-grid" id="legendInputsContainer">
+        <!-- campos gerados dinamicamente conforme as curvas detectadas no arquivo -->
+      </div>
+    </details>
+ 
+    <details style="margin-top:14px;">
       <summary>🔤 Texto</summary>
       <div class="settings-grid">
         <div>
@@ -224,7 +231,7 @@
         </div>
       </div>
     </details>
-
+ 
     <details style="margin-top:14px;">
       <summary>🎨 Cores</summary>
       <div class="settings-grid">
@@ -264,7 +271,7 @@
         </div>
       </div>
     </details>
-
+ 
     <details style="margin-top:14px;">
       <summary>📏 Linhas, pontos e legenda</summary>
       <div class="settings-grid">
@@ -299,12 +306,12 @@
         </div>
       </div>
     </details>
-
+ 
     <div class="actions">
       <button id="btnRedraw">Aplicar</button>
     </div>
   </div>
-
+ 
   <div class="card" id="chartCard">
     <div id="chartDiv"></div>
     <div class="actions">
@@ -313,7 +320,7 @@
     </div>
   </div>
 </div>
-
+ 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof XLSX === 'undefined' || typeof Plotly === 'undefined') {
@@ -324,11 +331,12 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dropzone').style.opacity = '0.5';
   }
 });
-
+ 
 let parsedGroups = null;   // { curva: { rows:[...], hasMedia, hasFaixa } }
 let headerLabels = { time: "Time [h]", conc: "Concentration" };
 let outputBaseName = "grafico_pk";
-
+let customLegendNames = {};   // { nomeOriginalDaCurva: "texto personalizado" }
+ 
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const fileInfo = document.getElementById('fileInfo');
@@ -336,7 +344,7 @@ const detectedBox = document.getElementById('detected');
 const warnBox = document.getElementById('warnBox');
 const settingsCard = document.getElementById('settingsCard');
 const chartCard = document.getElementById('chartCard');
-
+ 
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
@@ -348,7 +356,7 @@ dropzone.addEventListener('drop', (e) => {
 fileInput.addEventListener('change', (e) => {
   if (e.target.files.length) handleFile(e.target.files[0]);
 });
-
+ 
 document.getElementById('btnReset').addEventListener('click', () => {
   chartCard.style.display = 'none';
   settingsCard.style.display = 'none';
@@ -356,23 +364,25 @@ document.getElementById('btnReset').addEventListener('click', () => {
   detectedBox.style.display = 'none';
   warnBox.style.display = 'none';
   fileInput.value = '';
+  customLegendNames = {};
+  document.getElementById('legendInputsContainer').innerHTML = '';
 });
-
+ 
 document.getElementById('btnRedraw').addEventListener('click', () => drawChart());
 document.getElementById('btnDownload').addEventListener('click', downloadImage);
-
+ 
 ['inRibbonAlpha', 'inMarkerSize', 'inLineWidth', 'inErrorWidth', 'inChartHeight', 'inFontSize', 'inTitleFontSize', 'inLegendFontSize'].forEach(id => {
   document.getElementById(id).addEventListener('input', (e) => {
     document.getElementById(id + 'Val').textContent = e.target.value;
   });
 });
-
+ 
 function numOrNull(v) {
   if (v === undefined || v === null || v === '') return null;
   const n = Number(v);
   return isFinite(n) ? n : null;
 }
-
+ 
 function handleFile(file) {
   warnBox.style.display = 'none';
   outputBaseName = file.name.replace(/\.xlsx$/i, '');
@@ -384,16 +394,16 @@ function handleFile(file) {
       const firstSheetName = workbook.SheetNames[0];
       const sheet = workbook.Sheets[firstSheetName];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
-
+ 
       if (!rows || rows.length < 2) {
         showWarning('O arquivo parece vazio ou não tem o formato esperado.');
         return;
       }
-
+ 
       const header = rows[0];
       headerLabels.time = header[2] || 'Time [h]';
       headerLabels.conc = header[4] || 'Concentration';
-
+ 
       const groups = {};
       for (let i = 1; i < rows.length; i++) {
         const r = rows[i];
@@ -404,22 +414,22 @@ function handleFile(file) {
         const lower = numOrNull(r[3]);
         const conc = numOrNull(r[4]);
         const upper = numOrNull(r[5]);
-
+ 
         if (!groups[curva]) groups[curva] = { rows: [], hasMedia: false, hasFaixa: false };
         groups[curva].rows.push({ tempo, lower, conc, upper });
         if (conc !== null) groups[curva].hasMedia = true;
         if (lower !== null && upper !== null) groups[curva].hasFaixa = true;
       }
-
+ 
       // ordena cada grupo por tempo
       Object.values(groups).forEach(g => g.rows.sort((a, b) => a.tempo - b.tempo));
-
+ 
       parsedGroups = groups;
-
+ 
       const faixaNomes = Object.keys(groups).filter(k => groups[k].hasFaixa && !groups[k].hasMedia);
       const mediaNomes = Object.keys(groups).filter(k => groups[k].hasMedia && !groups[k].hasFaixa);
       const obsNomes = Object.keys(groups).filter(k => groups[k].hasMedia && groups[k].hasFaixa);
-
+ 
       if (faixaNomes.length < 1 || mediaNomes.length < 1 || obsNomes.length < 1) {
         showWarning(
           'Não foi possível identificar automaticamente as 3 curvas esperadas (Faixa, Média, Observado(s)).\n' +
@@ -429,24 +439,28 @@ function handleFile(file) {
           'Observado(s) detectado(s): ' + (obsNomes.join(', ') || '—')
         );
       }
-
+ 
       fileInfo.textContent = '✅ Arquivo carregado: ' + file.name + ' (' + (rows.length - 1) + ' linhas)';
       fileInfo.style.display = 'block';
-
+ 
       detectedBox.innerHTML =
         '<b>Faixa:</b> ' + (faixaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
         '<b>Média:</b> ' + (mediaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
         '<b>Observado(s):</b> ' + (obsNomes.join(', ') || '—');
       detectedBox.style.display = 'block';
-
+ 
+      // reseta os nomes personalizados e gera um campo de renomear para cada curva detectada
+      customLegendNames = {};
+      buildLegendInputs(faixaNomes[0], mediaNomes[0], obsNomes);
+ 
       // preenche os campos de ajuste com valores padrão vindos do arquivo
       document.getElementById('inXLabel').value = headerLabels.time;
       document.getElementById('inYLabel').value = headerLabels.conc;
       document.getElementById('inTitle').value = '';
-
+ 
       settingsCard.style.display = 'block';
       chartCard.style.display = 'block';
-
+ 
       drawChart();
     } catch (err) {
       showWarning('Erro ao ler o arquivo: ' + err.message + '\nConfira se é um .xlsx válido no formato esperado.');
@@ -454,12 +468,45 @@ function handleFile(file) {
   };
   reader.readAsArrayBuffer(file);
 }
-
+ 
 function showWarning(msg) {
   warnBox.textContent = '⚠️ ' + msg;
   warnBox.style.display = 'block';
 }
-
+ 
+function buildLegendInputs(faixaNome, mediaNome, obsNomes) {
+  const container = document.getElementById('legendInputsContainer');
+  container.innerHTML = '';
+ 
+  const criarCampo = (chaveOriginal, rotuloCampo) => {
+    const div = document.createElement('div');
+    const label = document.createElement('label');
+    label.textContent = rotuloCampo;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = chaveOriginal;
+    input.placeholder = chaveOriginal;
+    input.addEventListener('input', (e) => {
+      customLegendNames[chaveOriginal] = e.target.value.trim() || chaveOriginal;
+    });
+    div.appendChild(label);
+    div.appendChild(input);
+    container.appendChild(div);
+    customLegendNames[chaveOriginal] = chaveOriginal;
+  };
+ 
+  if (faixaNome) criarCampo(faixaNome, 'Faixa (ribbon)');
+  if (mediaNome) criarCampo(mediaNome, 'Média (linha)');
+  obsNomes.forEach((nome, i) => {
+    const rotulo = obsNomes.length > 1 ? `Observado ${i + 1} (${nome})` : 'Observado';
+    criarCampo(nome, rotulo);
+  });
+}
+ 
+function nomeExibicao(chaveOriginal) {
+  return customLegendNames[chaveOriginal] || chaveOriginal;
+}
+ 
 function legendPosition(code) {
   switch (code) {
     case 'tl': return { x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top' };
@@ -468,7 +515,7 @@ function legendPosition(code) {
     default: return { x: 0.99, y: 0.99, xanchor: 'right', yanchor: 'top' };
   }
 }
-
+ 
 function hexToRgba(hex, alpha) {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16);
@@ -476,16 +523,16 @@ function hexToRgba(hex, alpha) {
   const b = parseInt(h.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
-
+ 
 const SYMBOLS = ['circle', 'square', 'triangle-up', 'diamond', 'cross', 'star-diamond', 'pentagon'];
-
+ 
 function drawChart() {
   if (!parsedGroups) return;
-
+ 
   const faixaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasFaixa && !parsedGroups[k].hasMedia);
   const mediaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasMedia && !parsedGroups[k].hasFaixa);
   const obsNomes = Object.keys(parsedGroups).filter(k => parsedGroups[k].hasMedia && parsedGroups[k].hasFaixa);
-
+ 
   // Texto
   const title = document.getElementById('inTitle').value;
   const xLabel = document.getElementById('inXLabel').value || headerLabels.time;
@@ -494,7 +541,7 @@ function drawChart() {
   const fontSize = parseInt(document.getElementById('inFontSize').value, 10);
   const titleFontSize = parseInt(document.getElementById('inTitleFontSize').value, 10);
   const legendFontSize = parseInt(document.getElementById('inLegendFontSize').value, 10);
-
+ 
   // Cores
   const ribbonColor = document.getElementById('inRibbonColor').value;
   const ribbonAlpha = parseFloat(document.getElementById('inRibbonAlpha').value);
@@ -504,18 +551,18 @@ function drawChart() {
   const gridColor = document.getElementById('inGridColor').value;
   const axisColor = document.getElementById('inAxisColor').value;
   const showGrid = document.getElementById('inShowGrid').checked;
-
+ 
   // Linhas, pontos e legenda
   const markerSize = parseInt(document.getElementById('inMarkerSize').value, 10);
   const lineWidth = parseFloat(document.getElementById('inLineWidth').value);
   const errorWidth = parseFloat(document.getElementById('inErrorWidth').value);
   const chartHeight = parseInt(document.getElementById('inChartHeight').value, 10);
   const legendPos = legendPosition(document.getElementById('inLegendPos').value);
-
+ 
   document.getElementById('chartDiv').style.height = chartHeight + 'px';
-
+ 
   const traces = [];
-
+ 
   if (faixaNome) {
     const rows = parsedGroups[faixaNome].rows.filter(r => r.lower !== null && r.upper !== null);
     const x = rows.map(r => r.tempo);
@@ -527,19 +574,19 @@ function drawChart() {
       x, y: rows.map(r => r.lower),
       mode: 'lines', line: { width: 0 }, fill: 'tonexty',
       fillcolor: hexToRgba(ribbonColor, ribbonAlpha),
-      hoverinfo: 'skip', name: faixaNome
+      hoverinfo: 'skip', name: nomeExibicao(faixaNome)
     });
   }
-
+ 
   if (mediaNome) {
     const rows = parsedGroups[mediaNome].rows.filter(r => r.conc !== null);
     traces.push({
       x: rows.map(r => r.tempo), y: rows.map(r => r.conc),
       mode: 'lines', line: { color: lineColor, width: lineWidth },
-      name: mediaNome
+      name: nomeExibicao(mediaNome)
     });
   }
-
+ 
   obsNomes.forEach((nome, i) => {
     const rows = parsedGroups[nome].rows.filter(r => r.conc !== null);
     traces.push({
@@ -552,10 +599,10 @@ function drawChart() {
         arrayminus: rows.map(r => (r.lower !== null ? r.conc - r.lower : 0)),
         thickness: errorWidth, width: 3, color: lineColor
       },
-      name: nome
+      name: nomeExibicao(nome)
     });
   });
-
+ 
   const layout = {
     title: title ? { text: title, font: { size: titleFontSize, family: fontFamily, color: textColor } } : undefined,
     xaxis: {
@@ -575,14 +622,14 @@ function drawChart() {
     margin: { t: title ? titleFontSize + 40 : 20, r: 30, b: 60, l: 70 },
     hovermode: 'closest'
   };
-
+ 
   Plotly.newPlot('chartDiv', traces, layout, {
     responsive: true,
     displaylogo: false,
     modeBarButtonsToRemove: ['lasso2d', 'select2d']
   });
 }
-
+ 
 function downloadImage() {
   const gd = document.getElementById('chartDiv');
   Plotly.downloadImage(gd, {
@@ -596,3 +643,4 @@ function downloadImage() {
 </script>
 </body>
 </html>
+ 
