@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Gerador de Gráfico PK</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.2/plotly.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e2e4e8;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --warn-bg: #fff7ed;
+    --warn-border: #fb923c;
+    --warn-text: #9a3412;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181c;
+      --card-bg: #212227;
+      --text: #f0f0f2;
+      --muted: #9ca3af;
+      --border: #34363c;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --warn-bg: #3a2a16;
+      --warn-border: #d97706;
+      --warn-text: #fdba74;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181c;
+    --card-bg: #212227;
+    --text: #f0f0f2;
+    --muted: #9ca3af;
+    --border: #34363c;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+    --warn-bg: #3a2a16;
+    --warn-border: #d97706;
+    --warn-text: #fdba74;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 16px 60px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 0.92rem; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  #dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  #dropzone:hover, #dropzone.dragover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+  #dropzone p { margin: 6px 0; }
+  #dropzone .big { font-size: 1rem; }
+  #dropzone .small { font-size: 0.85rem; color: var(--muted); }
+  #fileInput { display: none; }
+
+  #fileInfo { font-size: 0.9rem; color: var(--muted); margin-top: 10px; display: none; }
+
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 6px;
+  }
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
+  input[type="text"], select {
+    width: 100%;
+    padding: 7px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  input[type="color"] {
+    width: 100%;
+    height: 34px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    padding: 2px;
+    background: var(--bg);
+  }
+  input[type="range"] { width: 100%; }
+  .range-val { font-size: 0.78rem; color: var(--muted); }
+
+  details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 4px 0;
+    user-select: none;
+  }
+
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover { background: var(--accent-hover); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.secondary:hover { background: var(--bg); }
+
+  .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+  #chartCard { display: none; }
+  #chartDiv { width: 100%; height: 520px; }
+
+  .warn {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    color: var(--warn-text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-top: 12px;
+    display: none;
+    white-space: pre-line;
+  }
+
+  .detected {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 10px;
+    display: none;
+  }
+  .detected b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📈 Gerador de Gráfico PK</h1>
+  <p class="subtitle">Anexe um arquivo .xlsx (exportado do PK-Sim/MoBi) e o gráfico é gerado automaticamente — sem editar nada. Funciona com qualquer arquivo no mesmo formato, independente do nome das curvas ou da unidade.</p>
+
+  <div class="card">
+    <div id="dropzone">
+      <p class="big">📎 Clique aqui ou arraste o arquivo .xlsx</p>
+      <p class="small">O arquivo é lido inteiramente no seu navegador — nada é enviado para nenhum servidor.</p>
+      <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+    <div id="fileInfo"></div>
+    <div class="detected" id="detected"></div>
+    <div class="warn" id="warnBox"></div>
+  </div>
+
+  <div class="card" id="settingsCard" style="display:none;">
+    <details open>
+      <summary>🔤 Texto</summary>
+      <div class="settings-grid">
+        <div>
+          <label for="inTitle">Título do gráfico</label>
+          <input type="text" id="inTitle" placeholder="(sem título)">
+        </div>
+        <div>
+          <label for="inXLabel">Rótulo do eixo X</label>
+          <input type="text" id="inXLabel">
+        </div>
+        <div>
+          <label for="inYLabel">Rótulo do eixo Y</label>
+          <input type="text" id="inYLabel">
+        </div>
+        <div>
+          <label for="inFontFamily">Fonte</label>
+          <select id="inFontFamily">
+            <option value="Arial, Helvetica, sans-serif">Arial</option>
+            <option value="'Segoe UI', Roboto, sans-serif">Segoe UI</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+          </select>
+        </div>
+        <div>
+          <label for="inFontSize">Tamanho da fonte geral (eixos)</label>
+          <input type="range" id="inFontSize" min="9" max="30" step="1" value="13">
+          <div class="range-val" id="inFontSizeVal">13</div>
+        </div>
+        <div>
+          <label for="inTitleFontSize">Tamanho da fonte do título</label>
+          <input type="range" id="inTitleFontSize" min="12" max="36" step="1" value="18">
+          <div class="range-val" id="inTitleFontSizeVal">18</div>
+        </div>
+        <div>
+          <label for="inLegendFontSize">Tamanho da fonte da legenda</label>
+          <input type="range" id="inLegendFontSize" min="8" max="22" step="1" value="12">
+          <div class="range-val" id="inLegendFontSizeVal">12</div>
+        </div>
+      </div>
+    </details>
+
+    <details style="margin-top:14px;">
+      <summary>🎨 Cores</summary>
+      <div class="settings-grid">
+        <div>
+          <label for="inRibbonColor">Cor da faixa (5%-95%)</label>
+          <input type="color" id="inRibbonColor" value="#808080">
+        </div>
+        <div>
+          <label for="inRibbonAlpha">Opacidade da faixa</label>
+          <input type="range" id="inRibbonAlpha" min="0.05" max="0.9" step="0.05" value="0.35">
+          <div class="range-val" id="inRibbonAlphaVal">0.35</div>
+        </div>
+        <div>
+          <label for="inLineColor">Cor da linha/pontos</label>
+          <input type="color" id="inLineColor" value="#000000">
+        </div>
+        <div>
+          <label for="inBgColor">Cor de fundo do gráfico</label>
+          <input type="color" id="inBgColor" value="#ffffff">
+        </div>
+        <div>
+          <label for="inTextColor">Cor do texto</label>
+          <input type="color" id="inTextColor" value="#1a1a1a">
+        </div>
+        <div>
+          <label for="inGridColor">Cor das linhas de grade</label>
+          <input type="color" id="inGridColor" value="#e5e5e5">
+        </div>
+        <div>
+          <label for="inAxisColor">Cor dos eixos</label>
+          <input type="color" id="inAxisColor" value="#333333">
+        </div>
+        <div>
+          <label style="display:flex; align-items:center; gap:6px; margin-top:8px;">
+            <input type="checkbox" id="inShowGrid" checked style="width:auto;"> Mostrar linhas de grade
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <details style="margin-top:14px;">
+      <summary>📏 Linhas, pontos e legenda</summary>
+      <div class="settings-grid">
+        <div>
+          <label for="inMarkerSize">Tamanho dos pontos</label>
+          <input type="range" id="inMarkerSize" min="4" max="18" step="1" value="8">
+          <div class="range-val" id="inMarkerSizeVal">8</div>
+        </div>
+        <div>
+          <label for="inLineWidth">Espessura da linha (média)</label>
+          <input type="range" id="inLineWidth" min="1" max="6" step="0.5" value="2">
+          <div class="range-val" id="inLineWidthVal">2</div>
+        </div>
+        <div>
+          <label for="inErrorWidth">Espessura da barra de erro</label>
+          <input type="range" id="inErrorWidth" min="0.5" max="5" step="0.5" value="1.4">
+          <div class="range-val" id="inErrorWidthVal">1.4</div>
+        </div>
+        <div>
+          <label for="inChartHeight">Altura do gráfico (px)</label>
+          <input type="range" id="inChartHeight" min="320" max="900" step="20" value="520">
+          <div class="range-val" id="inChartHeightVal">520</div>
+        </div>
+        <div>
+          <label for="inLegendPos">Posição da legenda</label>
+          <select id="inLegendPos">
+            <option value="tr">Superior direita</option>
+            <option value="tl">Superior esquerda</option>
+            <option value="br">Inferior direita</option>
+            <option value="bl">Inferior esquerda</option>
+          </select>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnRedraw">Aplicar</button>
+    </div>
+  </div>
+
+  <div class="card" id="chartCard">
+    <div id="chartDiv"></div>
+    <div class="actions">
+      <button id="btnDownload">⬇️ Baixar imagem (PNG)</button>
+      <button class="secondary" id="btnReset">Carregar outro arquivo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof XLSX === 'undefined' || typeof Plotly === 'undefined') {
+    const box = document.getElementById('warnBox');
+    box.textContent = '⚠️ Não foi possível carregar as bibliotecas necessárias (SheetJS/Plotly). Verifique sua conexão e recarregue a página.';
+    box.style.display = 'block';
+    document.getElementById('dropzone').style.pointerEvents = 'none';
+    document.getElementById('dropzone').style.opacity = '0.5';
+  }
+});
+
+let parsedGroups = null;   // { curva: { rows:[...], hasMedia, hasFaixa } }
+let headerLabels = { time: "Time [h]", conc: "Concentration" };
+let outputBaseName = "grafico_pk";
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const detectedBox = document.getElementById('detected');
+const warnBox = document.getElementById('warnBox');
+const settingsCard = document.getElementById('settingsCard');
+const chartCard = document.getElementById('chartCard');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFile(e.target.files[0]);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  chartCard.style.display = 'none';
+  settingsCard.style.display = 'none';
+  fileInfo.style.display = 'none';
+  detectedBox.style.display = 'none';
+  warnBox.style.display = 'none';
+  fileInput.value = '';
+});
+
+document.getElementById('btnRedraw').addEventListener('click', () => drawChart());
+document.getElementById('btnDownload').addEventListener('click', downloadImage);
+
+['inRibbonAlpha', 'inMarkerSize', 'inLineWidth', 'inErrorWidth', 'inChartHeight', 'inFontSize', 'inTitleFontSize', 'inLegendFontSize'].forEach(id => {
+  document.getElementById(id).addEventListener('input', (e) => {
+    document.getElementById(id + 'Val').textContent = e.target.value;
+  });
+});
+
+function numOrNull(v) {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
+
+function handleFile(file) {
+  warnBox.style.display = 'none';
+  outputBaseName = file.name.replace(/\.xlsx$/i, '');
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+
+      if (!rows || rows.length < 2) {
+        showWarning('O arquivo parece vazio ou não tem o formato esperado.');
+        return;
+      }
+
+      const header = rows[0];
+      headerLabels.time = header[2] || 'Time [h]';
+      headerLabels.conc = header[4] || 'Concentration';
+
+      const groups = {};
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r[1] === undefined || r[1] === null || r[1] === '') continue;
+        const curva = String(r[1]);
+        const tempo = numOrNull(r[2]);
+        if (tempo === null) continue;
+        const lower = numOrNull(r[3]);
+        const conc = numOrNull(r[4]);
+        const upper = numOrNull(r[5]);
+
+        if (!groups[curva]) groups[curva] = { rows: [], hasMedia: false, hasFaixa: false };
+        groups[curva].rows.push({ tempo, lower, conc, upper });
+        if (conc !== null) groups[curva].hasMedia = true;
+        if (lower !== null && upper !== null) groups[curva].hasFaixa = true;
+      }
+
+      // ordena cada grupo por tempo
+      Object.values(groups).forEach(g => g.rows.sort((a, b) => a.tempo - b.tempo));
+
+      parsedGroups = groups;
+
+      const faixaNomes = Object.keys(groups).filter(k => groups[k].hasFaixa && !groups[k].hasMedia);
+      const mediaNomes = Object.keys(groups).filter(k => groups[k].hasMedia && !groups[k].hasFaixa);
+      const obsNomes = Object.keys(groups).filter(k => groups[k].hasMedia && groups[k].hasFaixa);
+
+      if (faixaNomes.length < 1 || mediaNomes.length < 1 || obsNomes.length < 1) {
+        showWarning(
+          'Não foi possível identificar automaticamente as 3 curvas esperadas (Faixa, Média, Observado(s)).\n' +
+          'Curvas encontradas no arquivo: ' + Object.keys(groups).join(' | ') + '\n' +
+          'Faixa detectada: ' + (faixaNomes.join(', ') || '—') + '\n' +
+          'Média detectada: ' + (mediaNomes.join(', ') || '—') + '\n' +
+          'Observado(s) detectado(s): ' + (obsNomes.join(', ') || '—')
+        );
+      }
+
+      fileInfo.textContent = '✅ Arquivo carregado: ' + file.name + ' (' + (rows.length - 1) + ' linhas)';
+      fileInfo.style.display = 'block';
+
+      detectedBox.innerHTML =
+        '<b>Faixa:</b> ' + (faixaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
+        '<b>Média:</b> ' + (mediaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
+        '<b>Observado(s):</b> ' + (obsNomes.join(', ') || '—');
+      detectedBox.style.display = 'block';
+
+      // preenche os campos de ajuste com valores padrão vindos do arquivo
+      document.getElementById('inXLabel').value = headerLabels.time;
+      document.getElementById('inYLabel').value = headerLabels.conc;
+      document.getElementById('inTitle').value = '';
+
+      settingsCard.style.display = 'block';
+      chartCard.style.display = 'block';
+
+      drawChart();
+    } catch (err) {
+      showWarning('Erro ao ler o arquivo: ' + err.message + '\nConfira se é um .xlsx válido no formato esperado.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showWarning(msg) {
+  warnBox.textContent = '⚠️ ' + msg;
+  warnBox.style.display = 'block';
+}
+
+function legendPosition(code) {
+  switch (code) {
+    case 'tl': return { x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top' };
+    case 'br': return { x: 0.99, y: 0.01, xanchor: 'right', yanchor: 'bottom' };
+    case 'bl': return { x: 0.01, y: 0.01, xanchor: 'left', yanchor: 'bottom' };
+    default: return { x: 0.99, y: 0.99, xanchor: 'right', yanchor: 'top' };
+  }
+}
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+const SYMBOLS = ['circle', 'square', 'triangle-up', 'diamond', 'cross', 'star-diamond', 'pentagon'];
+
+function drawChart() {
+  if (!parsedGroups) return;
+
+  const faixaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasFaixa && !parsedGroups[k].hasMedia);
+  const mediaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasMedia && !parsedGroups[k].hasFaixa);
+  const obsNomes = Object.keys(parsedGroups).filter(k => parsedGroups[k].hasMedia && parsedGroups[k].hasFaixa);
+
+  // Texto
+  const title = document.getElementById('inTitle').value;
+  const xLabel = document.getElementById('inXLabel').value || headerLabels.time;
+  const yLabel = document.getElementById('inYLabel').value || headerLabels.conc;
+  const fontFamily = document.getElementById('inFontFamily').value;
+  const fontSize = parseInt(document.getElementById('inFontSize').value, 10);
+  const titleFontSize = parseInt(document.getElementById('inTitleFontSize').value, 10);
+  const legendFontSize = parseInt(document.getElementById('inLegendFontSize').value, 10);
+
+  // Cores
+  const ribbonColor = document.getElementById('inRibbonColor').value;
+  const ribbonAlpha = parseFloat(document.getElementById('inRibbonAlpha').value);
+  const lineColor = document.getElementById('inLineColor').value;
+  const bgColor = document.getElementById('inBgColor').value;
+  const textColor = document.getElementById('inTextColor').value;
+  const gridColor = document.getElementById('inGridColor').value;
+  const axisColor = document.getElementById('inAxisColor').value;
+  const showGrid = document.getElementById('inShowGrid').checked;
+
+  // Linhas, pontos e legenda
+  const markerSize = parseInt(document.getElementById('inMarkerSize').value, 10);
+  const lineWidth = parseFloat(document.getElementById('inLineWidth').value);
+  const errorWidth = parseFloat(document.getElementById('inErrorWidth').value);
+  const chartHeight = parseInt(document.getElementById('inChartHeight').value, 10);
+  const legendPos = legendPosition(document.getElementById('inLegendPos').value);
+
+  document.getElementById('chartDiv').style.height = chartHeight + 'px';
+
+  const traces = [];
+
+  if (faixaNome) {
+    const rows = parsedGroups[faixaNome].rows.filter(r => r.lower !== null && r.upper !== null);
+    const x = rows.map(r => r.tempo);
+    traces.push({
+      x, y: rows.map(r => r.upper),
+      mode: 'lines', line: { width: 0 }, hoverinfo: 'skip', showlegend: false, name: 'upper'
+    });
+    traces.push({
+      x, y: rows.map(r => r.lower),
+      mode: 'lines', line: { width: 0 }, fill: 'tonexty',
+      fillcolor: hexToRgba(ribbonColor, ribbonAlpha),
+      hoverinfo: 'skip', name: faixaNome
+    });
+  }
+
+  if (mediaNome) {
+    const rows = parsedGroups[mediaNome].rows.filter(r => r.conc !== null);
+    traces.push({
+      x: rows.map(r => r.tempo), y: rows.map(r => r.conc),
+      mode: 'lines', line: { color: lineColor, width: lineWidth },
+      name: mediaNome
+    });
+  }
+
+  obsNomes.forEach((nome, i) => {
+    const rows = parsedGroups[nome].rows.filter(r => r.conc !== null);
+    traces.push({
+      x: rows.map(r => r.tempo), y: rows.map(r => r.conc),
+      mode: 'markers',
+      marker: { color: lineColor, symbol: SYMBOLS[i % SYMBOLS.length], size: markerSize, line: { width: 1, color: lineColor } },
+      error_y: {
+        type: 'data', symmetric: false,
+        array: rows.map(r => (r.upper !== null ? r.upper - r.conc : 0)),
+        arrayminus: rows.map(r => (r.lower !== null ? r.conc - r.lower : 0)),
+        thickness: errorWidth, width: 3, color: lineColor
+      },
+      name: nome
+    });
+  });
+
+  const layout = {
+    title: title ? { text: title, font: { size: titleFontSize, family: fontFamily, color: textColor } } : undefined,
+    xaxis: {
+      title: { text: xLabel },
+      gridcolor: gridColor, showgrid: showGrid,
+      zeroline: false, showline: true, linecolor: axisColor
+    },
+    yaxis: {
+      title: { text: yLabel },
+      gridcolor: gridColor, showgrid: showGrid,
+      zeroline: false, showline: true, linecolor: axisColor
+    },
+    plot_bgcolor: bgColor,
+    paper_bgcolor: bgColor,
+    font: { color: textColor, family: fontFamily, size: fontSize },
+    legend: Object.assign({ bgcolor: bgColor, bordercolor: axisColor, borderwidth: 1, font: { size: legendFontSize } }, legendPos),
+    margin: { t: title ? titleFontSize + 40 : 20, r: 30, b: 60, l: 70 },
+    hovermode: 'closest'
+  };
+
+  Plotly.newPlot('chartDiv', traces, layout, {
+    responsive: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ['lasso2d', 'select2d']
+  });
+}
+
+function downloadImage() {
+  const gd = document.getElementById('chartDiv');
+  Plotly.downloadImage(gd, {
+    format: 'png',
+    filename: outputBaseName,
+    width: 1200,
+    height: 700,
+    scale: 2
+  });
+}
+</script>
+</body>
+</html>
