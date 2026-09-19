@@ -3,193 +3,216 @@
 <head>
 <meta charset="UTF-8">
 <title>Gerador de Gráfico PK</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.2/plotly.min.js"></script>
 <style>
   :root {
-    --bg: #f5f6f8;
-    --card-bg: #ffffff;
-    --text: #1a1a1a;
-    --muted: #6b7280;
-    --border: #e2e4e8;
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --warn-bg: #fff7ed;
-    --warn-border: #fb923c;
-    --warn-text: #9a3412;
+    --paper: #EEF1EE;
+    --surface: #FFFFFF;
+    --surface-2: #F4F6F3;
+    --ink: #12211E;
+    --muted: #5B6B67;
+    --border: #D7DEDA;
+    --accent: #1F6F5C;
+    --accent-strong: #154A3D;
+    --accent-soft: rgba(31,111,92,0.11);
+    --warn-bg: #FBF2E3;
+    --warn-border: #C98A2C;
+    --warn-text: #7A4E12;
+    --danger: #B5533C;
+    --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #17181c;
-      --card-bg: #212227;
-      --text: #f0f0f2;
-      --muted: #9ca3af;
-      --border: #34363c;
-      --accent: #3b82f6;
-      --accent-hover: #60a5fa;
-      --warn-bg: #3a2a16;
-      --warn-border: #d97706;
-      --warn-text: #fdba74;
+      --paper: #141917;
+      --surface: #1B211F;
+      --surface-2: #212B27;
+      --ink: #EDF2F0;
+      --muted: #96A39E;
+      --border: #2D3835;
+      --accent: #4FBFA0;
+      --accent-strong: #7EDABF;
+      --accent-soft: rgba(79,191,160,0.16);
+      --warn-bg: #3A2C14;
+      --warn-border: #C98A2C;
+      --warn-text: #F0C480;
+      --danger: #E08E6D;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #17181c;
-    --card-bg: #212227;
-    --text: #f0f0f2;
-    --muted: #9ca3af;
-    --border: #34363c;
-    --accent: #3b82f6;
-    --accent-hover: #60a5fa;
-    --warn-bg: #3a2a16;
-    --warn-border: #d97706;
-    --warn-text: #fdba74;
+    --paper: #141917; --surface: #1B211F; --surface-2: #212B27; --ink: #EDF2F0;
+    --muted: #96A39E; --border: #2D3835; --accent: #4FBFA0; --accent-strong: #7EDABF;
+    --accent-soft: rgba(79,191,160,0.16); --warn-bg: #3A2C14; --warn-border: #C98A2C;
+    --warn-text: #F0C480; --danger: #E08E6D;
   }
  
   * { box-sizing: border-box; }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 24px 16px 60px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    padding: 28px 16px 70px;
   }
-  .wrap { max-width: 980px; margin: 0 auto; }
-  h1 { font-size: 1.4rem; margin: 0 0 4px; }
-  .subtitle { color: var(--muted); margin: 0 0 24px; font-size: 0.92rem; }
+  ::selection { background: var(--accent-soft); }
+  a { color: var(--accent-strong); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
  
-  .card {
-    background: var(--card-bg);
+  .wrap { max-width: 900px; margin: 0 auto; }
+ 
+  .hero { display: flex; align-items: center; gap: 16px; margin-bottom: 26px; }
+  .hero svg { flex: none; }
+  .hero h1 { font-size: 1.32rem; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.01em; }
+  .hero .subtitle { color: var(--muted); margin: 0; font-size: 0.92rem; max-width: 62ch; line-height: 1.5; }
+ 
+  .step {
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    border-top: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 22px 22px 24px;
     margin-bottom: 20px;
   }
+  .step-title {
+    display: flex; align-items: baseline; gap: 10px;
+    font-size: 1.05rem; font-weight: 600; margin: 0 0 16px;
+  }
+  .step-num { font-family: var(--font-mono); color: var(--muted); font-size: 0.82rem; font-weight: 500; }
+  .step-hint { color: var(--muted); font-size: 0.85rem; margin: -10px 0 16px; line-height: 1.5; }
  
   #dropzone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 32px 16px;
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 30px 16px;
     text-align: center;
     cursor: pointer;
     transition: border-color .15s, background .15s;
   }
-  #dropzone:hover, #dropzone.dragover {
-    border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 6%, transparent);
-  }
-  #dropzone p { margin: 6px 0; }
-  #dropzone .big { font-size: 1rem; }
-  #dropzone .small { font-size: 0.85rem; color: var(--muted); }
+  #dropzone:hover, #dropzone.dragover { border-color: var(--accent); background: var(--accent-soft); }
+  #dropzone .big { margin: 0 0 4px; font-size: 0.98rem; }
+  #dropzone .small { margin: 0; font-size: 0.82rem; color: var(--muted); }
   #fileInput { display: none; }
  
-  #fileInfo { font-size: 0.9rem; color: var(--muted); margin-top: 10px; display: none; }
+  .dataset-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px;
+    padding: 10px 12px; margin-top: 12px;
+  }
+  .dataset-row input[type="color"] {
+    width: 30px; height: 30px; padding: 0; border-radius: 6px; border: 1px solid var(--border); background: none; flex: none;
+  }
+  .dataset-main { flex: 1; min-width: 0; }
+  .dataset-main input[type="text"] {
+    font-family: var(--font-mono); font-size: 0.88rem; font-weight: 500;
+    border: none; background: none; padding: 2px 0; width: 100%; color: var(--ink);
+  }
+  .dataset-summary { font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); margin-top: 2px; }
+  .dataset-summary.warn-text { color: var(--warn-text); }
+  .dataset-row .icon-btn { flex: none; }
+  .legend-rename { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .legend-rename summary { font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  .legend-rename .settings-grid { margin-top: 10px; }
  
   .settings-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 14px;
-    margin-top: 6px;
   }
-  label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 4px; }
-  input[type="text"], select {
-    width: 100%;
-    padding: 7px 9px;
-    border-radius: 7px;
-    border: 1px solid var(--border);
-    background: var(--bg);
-    color: var(--text);
-    font-size: 0.9rem;
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  input[type="text"], input[type="number"], select {
+    width: 100%; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--paper); color: var(--ink); font-size: 0.88rem; font-family: var(--font-sans);
   }
-  input[type="color"] {
-    width: 100%;
-    height: 34px;
-    border-radius: 7px;
-    border: 1px solid var(--border);
-    padding: 2px;
-    background: var(--bg);
-  }
-  input[type="range"] { width: 100%; }
-  .range-val { font-size: 0.78rem; color: var(--muted); }
+  input[type="color"] { width: 100%; height: 34px; border-radius: 6px; border: 1px solid var(--border); padding: 2px; background: var(--paper); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .range-val { font-size: 0.76rem; color: var(--muted); font-family: var(--font-mono); }
+  .checkbox-row { display: flex; align-items: center; gap: 7px; margin-top: 6px; font-size: 0.85rem; color: var(--ink); }
+  .checkbox-row input { width: auto; accent-color: var(--accent); }
  
-  details > summary {
-    cursor: pointer;
-    font-weight: 600;
-    padding: 4px 0;
-    user-select: none;
-  }
+  details { margin-top: 14px; }
+  details:first-of-type { margin-top: 0; }
+  details > summary { cursor: pointer; font-weight: 600; padding: 4px 0; user-select: none; font-size: 0.92rem; }
+  details[open] > summary { margin-bottom: 4px; }
+ 
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
  
   button {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 9px 18px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    font-weight: 600;
+    background: var(--accent); color: #fff; border: none; padding: 9px 16px;
+    border-radius: 7px; font-size: 0.86rem; cursor: pointer; font-weight: 600;
+    font-family: var(--font-sans);
   }
-  button:hover { background: var(--accent-hover); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.secondary {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  button.secondary:hover { background: var(--bg); }
+  button:hover { background: var(--accent-strong); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+  button.secondary:hover { background: var(--surface-2); }
+  button.icon-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 5px 9px; font-size: 0.85rem; }
+  button.icon-btn:hover { color: var(--danger); border-color: var(--danger); background: transparent; }
  
-  .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
  
-  #chartCard { display: none; }
   #chartDiv { width: 100%; height: 520px; }
+  #chartEmpty { color: var(--muted); font-size: 0.9rem; padding: 40px 0; text-align: center; }
  
   .warn {
-    background: var(--warn-bg);
-    border: 1px solid var(--warn-border);
-    color: var(--warn-text);
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    margin-top: 12px;
-    display: none;
-    white-space: pre-line;
+    background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
+    padding: 10px 14px; border-radius: 7px; font-size: 0.84rem; margin-top: 12px; display: none; white-space: pre-line;
   }
  
-  .detected {
-    font-size: 0.85rem;
-    color: var(--muted);
-    margin-top: 10px;
-    display: none;
+  .remember-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 0.83rem; color: var(--muted); flex-wrap: wrap; }
+  .remember-row input { accent-color: var(--accent); }
+ 
+  @media (max-width: 600px) {
+    .hero { align-items: flex-start; }
+    .step { padding: 18px 16px 20px; }
   }
-  .detected b { color: var(--text); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>📈 Gerador de Gráfico PK</h1>
-  <p class="subtitle">Anexe um arquivo .xlsx (exportado do PK-Sim/MoBi) e o gráfico é gerado automaticamente — sem editar nada. Funciona com qualquer arquivo no mesmo formato, independente do nome das curvas ou da unidade.</p>
  
-  <div class="card">
-    <div id="dropzone">
-      <p class="big">📎 Clique aqui ou arraste o arquivo .xlsx</p>
-      <p class="small">O arquivo é lido inteiramente no seu navegador — nada é enviado para nenhum servidor.</p>
-      <input type="file" id="fileInput" accept=".xlsx">
+  <div class="hero">
+    <svg width="56" height="40" viewBox="0 0 64 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M2,34 C6,22 9,7 15,6 C24,4 26,17 33,22 C42,28 48,29 60,28 L60,34 Z" fill="var(--accent-soft)"/>
+      <path d="M2,34 C6,22 9,7 15,6 C24,4 26,17 33,22 C42,28 48,29 60,28" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <circle cx="24" cy="17.4" r="2.1" fill="var(--ink)"/>
+      <circle cx="33" cy="22" r="2.1" fill="var(--ink)"/>
+      <circle cx="48" cy="29" r="2.1" fill="var(--ink)"/>
+    </svg>
+    <div>
+      <h1>Gerador de Gráfico PK</h1>
+      <p class="subtitle">Anexe um ou mais arquivos .xlsx exportados do PK-Sim/MoBi. As curvas (faixa, média e observado) são detectadas automaticamente — sem editar nada.</p>
     </div>
-    <div id="fileInfo"></div>
-    <div class="detected" id="detected"></div>
+  </div>
+ 
+  <div class="step" id="stepFiles">
+    <h2 class="step-title"><span class="step-num">01</span><span>Arquivos</span></h2>
+    <div id="dropzone">
+      <p class="big">📎 Clique aqui ou arraste um ou mais arquivos .xlsx</p>
+      <p class="small">Cada arquivo vira uma curva no gráfico — anexe mais de um para comparar estudos. Tudo é lido no seu navegador; nada é enviado a um servidor.</p>
+      <input type="file" id="fileInput" accept=".xlsx" multiple>
+    </div>
+    <div id="datasetList"></div>
     <div class="warn" id="warnBox"></div>
   </div>
  
-  <div class="card" id="settingsCard" style="display:none;">
-    <details open>
-      <summary>🏷️ Legenda (renomear)</summary>
-      <div class="settings-grid" id="legendInputsContainer">
-        <!-- campos gerados dinamicamente conforme as curvas detectadas no arquivo -->
-      </div>
-    </details>
+  <div class="step" id="stepStyle" style="display:none;">
+    <h2 class="step-title"><span class="step-num">02</span><span>Estilo</span></h2>
  
-    <details style="margin-top:14px;">
-      <summary>🔤 Texto</summary>
+    <div class="presets">
+      <button class="secondary" data-preset="publicacao">Publicação (P&B)</button>
+      <button class="secondary" data-preset="apresentacao">Apresentação</button>
+      <button class="secondary" data-preset="escuro">Escuro</button>
+      <button class="secondary" id="btnResetStyle">↺ Restaurar padrão</button>
+    </div>
+ 
+    <details open>
+      <summary>Texto</summary>
       <div class="settings-grid">
         <div>
           <label for="inTitle">Título do gráfico</label>
@@ -197,17 +220,17 @@
         </div>
         <div>
           <label for="inXLabel">Rótulo do eixo X</label>
-          <input type="text" id="inXLabel">
+          <input type="text" id="inXLabel" placeholder="Time [h]">
         </div>
         <div>
           <label for="inYLabel">Rótulo do eixo Y</label>
-          <input type="text" id="inYLabel">
+          <input type="text" id="inYLabel" placeholder="Concentration [ng/ml]">
         </div>
         <div>
           <label for="inFontFamily">Fonte</label>
           <select id="inFontFamily">
+            <option value="'IBM Plex Sans', sans-serif">IBM Plex Sans</option>
             <option value="Arial, Helvetica, sans-serif">Arial</option>
-            <option value="'Segoe UI', Roboto, sans-serif">Segoe UI</option>
             <option value="Georgia, serif">Georgia</option>
             <option value="'Times New Roman', Times, serif">Times New Roman</option>
             <option value="'Courier New', monospace">Courier New</option>
@@ -232,21 +255,46 @@
       </div>
     </details>
  
-    <details style="margin-top:14px;">
-      <summary>🎨 Cores</summary>
+    <details>
+      <summary>Eixos e escala</summary>
       <div class="settings-grid">
         <div>
-          <label for="inRibbonColor">Cor da faixa (5%-95%)</label>
-          <input type="color" id="inRibbonColor" value="#808080">
+          <label for="inXScale">Escala do eixo X</label>
+          <select id="inXScale"><option value="linear">Linear</option><option value="log">Logarítmica</option></select>
         </div>
         <div>
-          <label for="inRibbonAlpha">Opacidade da faixa</label>
+          <label for="inYScale">Escala do eixo Y</label>
+          <select id="inYScale"><option value="linear">Linear</option><option value="log">Logarítmica</option></select>
+        </div>
+        <div></div>
+        <div>
+          <label for="inXMin">Limite mínimo X</label>
+          <input type="number" id="inXMin" placeholder="auto">
+        </div>
+        <div>
+          <label for="inXMax">Limite máximo X</label>
+          <input type="number" id="inXMax" placeholder="auto">
+        </div>
+        <div></div>
+        <div>
+          <label for="inYMin">Limite mínimo Y</label>
+          <input type="number" id="inYMin" placeholder="auto">
+        </div>
+        <div>
+          <label for="inYMax">Limite máximo Y</label>
+          <input type="number" id="inYMax" placeholder="auto">
+        </div>
+      </div>
+      <p class="step-hint" style="margin-top:12px;">Limites de X e Y só são aplicados quando mínimo e máximo estão preenchidos e válidos; deixe em branco para ajuste automático. Em escala logarítmica, pontos com valor 0 não aparecem (comportamento padrão em gráficos de PK).</p>
+    </details>
+ 
+    <details>
+      <summary>Cores</summary>
+      <div class="settings-grid">
+        <div>
+          <label for="inRibbonAlpha">Opacidade da faixa (5%-95%)</label>
           <input type="range" id="inRibbonAlpha" min="0.05" max="0.9" step="0.05" value="0.35">
           <div class="range-val" id="inRibbonAlphaVal">0.35</div>
-        </div>
-        <div>
-          <label for="inLineColor">Cor da linha/pontos</label>
-          <input type="color" id="inLineColor" value="#000000">
         </div>
         <div>
           <label for="inBgColor">Cor de fundo do gráfico</label>
@@ -254,7 +302,7 @@
         </div>
         <div>
           <label for="inTextColor">Cor do texto</label>
-          <input type="color" id="inTextColor" value="#1a1a1a">
+          <input type="color" id="inTextColor" value="#12211e">
         </div>
         <div>
           <label for="inGridColor">Cor das linhas de grade</label>
@@ -265,15 +313,14 @@
           <input type="color" id="inAxisColor" value="#333333">
         </div>
         <div>
-          <label style="display:flex; align-items:center; gap:6px; margin-top:8px;">
-            <input type="checkbox" id="inShowGrid" checked style="width:auto;"> Mostrar linhas de grade
-          </label>
+          <div class="checkbox-row"><input type="checkbox" id="inShowGrid" checked> Mostrar linhas de grade</div>
         </div>
       </div>
+      <p class="step-hint" style="margin-top:12px;">A cor de cada curva (faixa, linha e pontos) é definida por arquivo, na seção "Arquivos" acima.</p>
     </details>
  
-    <details style="margin-top:14px;">
-      <summary>📏 Linhas, pontos e legenda</summary>
+    <details>
+      <summary>Linhas, pontos e legenda</summary>
       <div class="settings-grid">
         <div>
           <label for="inMarkerSize">Tamanho dos pontos</label>
@@ -307,75 +354,31 @@
       </div>
     </details>
  
-    <div class="actions">
-      <button id="btnRedraw">Aplicar</button>
+    <div class="remember-row">
+      <input type="checkbox" id="inRemember" checked>
+      <label for="inRemember" style="margin:0; color:inherit;">Lembrar essas preferências de estilo neste navegador</label>
+      <button class="icon-btn" id="btnForget" type="button">Esquecer preferências salvas</button>
     </div>
   </div>
  
-  <div class="card" id="chartCard">
+  <div class="step" id="stepChart" style="display:none;">
+    <h2 class="step-title"><span class="step-num">03</span><span>Gráfico</span></h2>
     <div id="chartDiv"></div>
     <div class="actions">
-      <button id="btnDownload">⬇️ Baixar imagem (PNG)</button>
-      <button class="secondary" id="btnReset">Carregar outro arquivo</button>
+      <button id="btnPng">⬇ Baixar PNG</button>
+      <button id="btnSvg">⬇ Baixar SVG</button>
+      <button class="secondary" id="btnCsv">⬇ Baixar dados (CSV)</button>
+      <button class="secondary" id="btnClearAll">Recomeçar</button>
     </div>
   </div>
+ 
 </div>
  
 <script>
-window.addEventListener('DOMContentLoaded', () => {
-  if (typeof XLSX === 'undefined' || typeof Plotly === 'undefined') {
-    const box = document.getElementById('warnBox');
-    box.textContent = '⚠️ Não foi possível carregar as bibliotecas necessárias (SheetJS/Plotly). Verifique sua conexão e recarregue a página.';
-    box.style.display = 'block';
-    document.getElementById('dropzone').style.pointerEvents = 'none';
-    document.getElementById('dropzone').style.opacity = '0.5';
-  }
-});
- 
-let parsedGroups = null;   // { curva: { rows:[...], hasMedia, hasFaixa } }
-let headerLabels = { time: "Time [h]", conc: "Concentration" };
-let outputBaseName = "grafico_pk";
-let customLegendNames = {};   // { nomeOriginalDaCurva: "texto personalizado" }
- 
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-const fileInfo = document.getElementById('fileInfo');
-const detectedBox = document.getElementById('detected');
-const warnBox = document.getElementById('warnBox');
-const settingsCard = document.getElementById('settingsCard');
-const chartCard = document.getElementById('chartCard');
- 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length) handleFile(e.target.files[0]);
-});
- 
-document.getElementById('btnReset').addEventListener('click', () => {
-  chartCard.style.display = 'none';
-  settingsCard.style.display = 'none';
-  fileInfo.style.display = 'none';
-  detectedBox.style.display = 'none';
-  warnBox.style.display = 'none';
-  fileInput.value = '';
-  customLegendNames = {};
-  document.getElementById('legendInputsContainer').innerHTML = '';
-});
- 
-document.getElementById('btnRedraw').addEventListener('click', () => drawChart());
-document.getElementById('btnDownload').addEventListener('click', downloadImage);
- 
-['inRibbonAlpha', 'inMarkerSize', 'inLineWidth', 'inErrorWidth', 'inChartHeight', 'inFontSize', 'inTitleFontSize', 'inLegendFontSize'].forEach(id => {
-  document.getElementById(id).addEventListener('input', (e) => {
-    document.getElementById(id + 'Val').textContent = e.target.value;
-  });
-});
+// =====================================================================
+// Funções puras de parsing / deteção / montagem das traces do Plotly
+// (mesma lógica testada isoladamente em Node antes de entrar aqui)
+// =====================================================================
  
 function numOrNull(v) {
   if (v === undefined || v === null || v === '') return null;
@@ -383,137 +386,53 @@ function numOrNull(v) {
   return isFinite(n) ? n : null;
 }
  
-function handleFile(file) {
-  warnBox.style.display = 'none';
-  outputBaseName = file.name.replace(/\.xlsx$/i, '');
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
- 
-      if (!rows || rows.length < 2) {
-        showWarning('O arquivo parece vazio ou não tem o formato esperado.');
-        return;
-      }
- 
-      const header = rows[0];
-      headerLabels.time = header[2] || 'Time [h]';
-      headerLabels.conc = header[4] || 'Concentration';
- 
-      const groups = {};
-      for (let i = 1; i < rows.length; i++) {
-        const r = rows[i];
-        if (!r || r[1] === undefined || r[1] === null || r[1] === '') continue;
-        const curva = String(r[1]);
-        const tempo = numOrNull(r[2]);
-        if (tempo === null) continue;
-        const lower = numOrNull(r[3]);
-        const conc = numOrNull(r[4]);
-        const upper = numOrNull(r[5]);
- 
-        if (!groups[curva]) groups[curva] = { rows: [], hasMedia: false, hasFaixa: false };
-        groups[curva].rows.push({ tempo, lower, conc, upper });
-        if (conc !== null) groups[curva].hasMedia = true;
-        if (lower !== null && upper !== null) groups[curva].hasFaixa = true;
-      }
- 
-      // ordena cada grupo por tempo
-      Object.values(groups).forEach(g => g.rows.sort((a, b) => a.tempo - b.tempo));
- 
-      parsedGroups = groups;
- 
-      const faixaNomes = Object.keys(groups).filter(k => groups[k].hasFaixa && !groups[k].hasMedia);
-      const mediaNomes = Object.keys(groups).filter(k => groups[k].hasMedia && !groups[k].hasFaixa);
-      const obsNomes = Object.keys(groups).filter(k => groups[k].hasMedia && groups[k].hasFaixa);
- 
-      if (faixaNomes.length < 1 || mediaNomes.length < 1 || obsNomes.length < 1) {
-        showWarning(
-          'Não foi possível identificar automaticamente as 3 curvas esperadas (Faixa, Média, Observado(s)).\n' +
-          'Curvas encontradas no arquivo: ' + Object.keys(groups).join(' | ') + '\n' +
-          'Faixa detectada: ' + (faixaNomes.join(', ') || '—') + '\n' +
-          'Média detectada: ' + (mediaNomes.join(', ') || '—') + '\n' +
-          'Observado(s) detectado(s): ' + (obsNomes.join(', ') || '—')
-        );
-      }
- 
-      fileInfo.textContent = '✅ Arquivo carregado: ' + file.name + ' (' + (rows.length - 1) + ' linhas)';
-      fileInfo.style.display = 'block';
- 
-      detectedBox.innerHTML =
-        '<b>Faixa:</b> ' + (faixaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
-        '<b>Média:</b> ' + (mediaNomes[0] || '—') + ' &nbsp; | &nbsp; ' +
-        '<b>Observado(s):</b> ' + (obsNomes.join(', ') || '—');
-      detectedBox.style.display = 'block';
- 
-      // reseta os nomes personalizados e gera um campo de renomear para cada curva detectada
-      customLegendNames = {};
-      buildLegendInputs(faixaNomes[0], mediaNomes[0], obsNomes);
- 
-      // preenche os campos de ajuste com valores padrão vindos do arquivo
-      document.getElementById('inXLabel').value = headerLabels.time;
-      document.getElementById('inYLabel').value = headerLabels.conc;
-      document.getElementById('inTitle').value = '';
- 
-      settingsCard.style.display = 'block';
-      chartCard.style.display = 'block';
- 
-      drawChart();
-    } catch (err) {
-      showWarning('Erro ao ler o arquivo: ' + err.message + '\nConfira se é um .xlsx válido no formato esperado.');
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
- 
-function showWarning(msg) {
-  warnBox.textContent = '⚠️ ' + msg;
-  warnBox.style.display = 'block';
-}
- 
-function buildLegendInputs(faixaNome, mediaNome, obsNomes) {
-  const container = document.getElementById('legendInputsContainer');
-  container.innerHTML = '';
- 
-  const criarCampo = (chaveOriginal, rotuloCampo) => {
-    const div = document.createElement('div');
-    const label = document.createElement('label');
-    label.textContent = rotuloCampo;
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = chaveOriginal;
-    input.placeholder = chaveOriginal;
-    input.addEventListener('input', (e) => {
-      customLegendNames[chaveOriginal] = e.target.value.trim() || chaveOriginal;
-    });
-    div.appendChild(label);
-    div.appendChild(input);
-    container.appendChild(div);
-    customLegendNames[chaveOriginal] = chaveOriginal;
-  };
- 
-  if (faixaNome) criarCampo(faixaNome, 'Faixa (ribbon)');
-  if (mediaNome) criarCampo(mediaNome, 'Média (linha)');
-  obsNomes.forEach((nome, i) => {
-    const rotulo = obsNomes.length > 1 ? `Observado ${i + 1} (${nome})` : 'Observado';
-    criarCampo(nome, rotulo);
-  });
-}
- 
-function nomeExibicao(chaveOriginal) {
-  return customLegendNames[chaveOriginal] || chaveOriginal;
-}
- 
-function legendPosition(code) {
-  switch (code) {
-    case 'tl': return { x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top' };
-    case 'br': return { x: 0.99, y: 0.01, xanchor: 'right', yanchor: 'bottom' };
-    case 'bl': return { x: 0.01, y: 0.01, xanchor: 'left', yanchor: 'bottom' };
-    default: return { x: 0.99, y: 0.99, xanchor: 'right', yanchor: 'top' };
+function parseSheetRowsToGroups(rows) {
+  if (!rows || rows.length < 2) throw new Error('Arquivo vazio ou sem linhas de dados suficientes.');
+  const header = rows[0];
+  const headerTime = header[2] || 'Time [h]';
+  const headerConc = header[4] || 'Concentration';
+  const groups = {};
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r[1] === undefined || r[1] === null || r[1] === '') continue;
+    const curva = String(r[1]);
+    const tempo = numOrNull(r[2]);
+    if (tempo === null) continue;
+    const lower = numOrNull(r[3]);
+    const conc = numOrNull(r[4]);
+    const upper = numOrNull(r[5]);
+    if (!groups[curva]) groups[curva] = { rows: [], hasMedia: false, hasFaixa: false };
+    groups[curva].rows.push({ tempo, lower, conc, upper });
+    if (conc !== null) groups[curva].hasMedia = true;
+    if (lower !== null && upper !== null) groups[curva].hasFaixa = true;
   }
+  Object.values(groups).forEach(g => g.rows.sort((a, b) => a.tempo - b.tempo));
+  return { groups, headerTime, headerConc };
+}
+ 
+function classifyGroups(groups) {
+  const faixaNomes = Object.keys(groups).filter(k => groups[k].hasFaixa && !groups[k].hasMedia);
+  const mediaNomes = Object.keys(groups).filter(k => groups[k].hasMedia && !groups[k].hasFaixa);
+  const obsNomes   = Object.keys(groups).filter(k => groups[k].hasMedia && groups[k].hasFaixa);
+  const ok = faixaNomes.length >= 1 && mediaNomes.length >= 1 && obsNomes.length >= 1;
+  return { faixaKey: faixaNomes[0] || null, mediaKey: mediaNomes[0] || null, obsKeys: obsNomes, ok, allCurveNames: Object.keys(groups) };
+}
+ 
+function buildDatasetFromRows(rows, fileName, id, color) {
+  const { groups, headerTime, headerConc } = parseSheetRowsToGroups(rows);
+  const cls = classifyGroups(groups);
+  const legendNames = {};
+  cls.allCurveNames.forEach(k => { legendNames[k] = k; });
+  return {
+    id, fileName, label: fileName.replace(/\.xlsx$/i, ''), color: color || '#000000',
+    groups, faixaKey: cls.faixaKey, mediaKey: cls.mediaKey, obsKeys: cls.obsKeys,
+    legendNames, timeHeader: headerTime, concHeader: headerConc, ok: cls.ok, allCurveNames: cls.allCurveNames
+  };
+}
+ 
+function getDisplayName(dataset, curveKey, multiple) {
+  const base = dataset.legendNames[curveKey] || curveKey;
+  return multiple ? `${base} (${dataset.label})` : base;
 }
  
 function hexToRgba(hex, alpha) {
@@ -526,121 +445,445 @@ function hexToRgba(hex, alpha) {
  
 const SYMBOLS = ['circle', 'square', 'triangle-up', 'diamond', 'cross', 'star-diamond', 'pentagon'];
  
-function drawChart() {
-  if (!parsedGroups) return;
- 
-  const faixaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasFaixa && !parsedGroups[k].hasMedia);
-  const mediaNome = Object.keys(parsedGroups).find(k => parsedGroups[k].hasMedia && !parsedGroups[k].hasFaixa);
-  const obsNomes = Object.keys(parsedGroups).filter(k => parsedGroups[k].hasMedia && parsedGroups[k].hasFaixa);
- 
-  // Texto
-  const title = document.getElementById('inTitle').value;
-  const xLabel = document.getElementById('inXLabel').value || headerLabels.time;
-  const yLabel = document.getElementById('inYLabel').value || headerLabels.conc;
-  const fontFamily = document.getElementById('inFontFamily').value;
-  const fontSize = parseInt(document.getElementById('inFontSize').value, 10);
-  const titleFontSize = parseInt(document.getElementById('inTitleFontSize').value, 10);
-  const legendFontSize = parseInt(document.getElementById('inLegendFontSize').value, 10);
- 
-  // Cores
-  const ribbonColor = document.getElementById('inRibbonColor').value;
-  const ribbonAlpha = parseFloat(document.getElementById('inRibbonAlpha').value);
-  const lineColor = document.getElementById('inLineColor').value;
-  const bgColor = document.getElementById('inBgColor').value;
-  const textColor = document.getElementById('inTextColor').value;
-  const gridColor = document.getElementById('inGridColor').value;
-  const axisColor = document.getElementById('inAxisColor').value;
-  const showGrid = document.getElementById('inShowGrid').checked;
- 
-  // Linhas, pontos e legenda
-  const markerSize = parseInt(document.getElementById('inMarkerSize').value, 10);
-  const lineWidth = parseFloat(document.getElementById('inLineWidth').value);
-  const errorWidth = parseFloat(document.getElementById('inErrorWidth').value);
-  const chartHeight = parseInt(document.getElementById('inChartHeight').value, 10);
-  const legendPos = legendPosition(document.getElementById('inLegendPos').value);
- 
-  document.getElementById('chartDiv').style.height = chartHeight + 'px';
- 
+function buildTraces(datasets, opts) {
   const traces = [];
- 
-  if (faixaNome) {
-    const rows = parsedGroups[faixaNome].rows.filter(r => r.lower !== null && r.upper !== null);
-    const x = rows.map(r => r.tempo);
-    traces.push({
-      x, y: rows.map(r => r.upper),
-      mode: 'lines', line: { width: 0 }, hoverinfo: 'skip', showlegend: false, name: 'upper'
-    });
-    traces.push({
-      x, y: rows.map(r => r.lower),
-      mode: 'lines', line: { width: 0 }, fill: 'tonexty',
-      fillcolor: hexToRgba(ribbonColor, ribbonAlpha),
-      hoverinfo: 'skip', name: nomeExibicao(faixaNome)
-    });
-  }
- 
-  if (mediaNome) {
-    const rows = parsedGroups[mediaNome].rows.filter(r => r.conc !== null);
-    traces.push({
-      x: rows.map(r => r.tempo), y: rows.map(r => r.conc),
-      mode: 'lines', line: { color: lineColor, width: lineWidth },
-      name: nomeExibicao(mediaNome)
-    });
-  }
- 
-  obsNomes.forEach((nome, i) => {
-    const rows = parsedGroups[nome].rows.filter(r => r.conc !== null);
-    traces.push({
-      x: rows.map(r => r.tempo), y: rows.map(r => r.conc),
-      mode: 'markers',
-      marker: { color: lineColor, symbol: SYMBOLS[i % SYMBOLS.length], size: markerSize, line: { width: 1, color: lineColor } },
-      error_y: {
-        type: 'data', symmetric: false,
-        array: rows.map(r => (r.upper !== null ? r.upper - r.conc : 0)),
-        arrayminus: rows.map(r => (r.lower !== null ? r.conc - r.lower : 0)),
-        thickness: errorWidth, width: 3, color: lineColor
-      },
-      name: nomeExibicao(nome)
+  const multiple = datasets.length > 1;
+  datasets.forEach(ds => {
+    if (!ds.ok) return;
+    if (ds.faixaKey) {
+      const rows = ds.groups[ds.faixaKey].rows.filter(r => r.lower !== null && r.upper !== null);
+      const x = rows.map(r => r.tempo);
+      traces.push({ x, y: rows.map(r => r.upper), mode: 'lines', line: { width: 0 }, hoverinfo: 'skip', showlegend: false, name: 'upper__' + ds.id });
+      traces.push({
+        x, y: rows.map(r => r.lower), mode: 'lines', line: { width: 0 }, fill: 'tonexty',
+        fillcolor: hexToRgba(ds.color, opts.ribbonAlpha), hoverinfo: 'skip', name: getDisplayName(ds, ds.faixaKey, multiple)
+      });
+    }
+    if (ds.mediaKey) {
+      const rows = ds.groups[ds.mediaKey].rows.filter(r => r.conc !== null);
+      traces.push({ x: rows.map(r => r.tempo), y: rows.map(r => r.conc), mode: 'lines', line: { color: ds.color, width: opts.lineWidth }, name: getDisplayName(ds, ds.mediaKey, multiple) });
+    }
+    ds.obsKeys.forEach((key, i) => {
+      const rows = ds.groups[key].rows.filter(r => r.conc !== null);
+      traces.push({
+        x: rows.map(r => r.tempo), y: rows.map(r => r.conc), mode: 'markers',
+        marker: { color: ds.color, symbol: SYMBOLS[i % SYMBOLS.length], size: opts.markerSize, line: { width: 1, color: ds.color } },
+        error_y: {
+          type: 'data', symmetric: false,
+          array: rows.map(r => (r.upper !== null ? r.upper - r.conc : 0)),
+          arrayminus: rows.map(r => (r.lower !== null ? r.conc - r.lower : 0)),
+          thickness: opts.errorWidth, width: 3, color: ds.color
+        },
+        name: getDisplayName(ds, key, multiple)
+      });
     });
   });
+  return traces;
+}
+ 
+function csvFromDatasets(datasets) {
+  const linhas = [['arquivo', 'curva', 'tempo', 'limite_inferior', 'concentracao', 'limite_superior']];
+  datasets.forEach(ds => {
+    Object.keys(ds.groups).forEach(curva => {
+      ds.groups[curva].rows.forEach(r => {
+        linhas.push([ds.fileName, curva, r.tempo, r.lower ?? '', r.conc ?? '', r.upper ?? '']);
+      });
+    });
+  });
+  return linhas.map(l => l.map(v => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\n');
+}
+ 
+function resolveAxisRange(minStr, maxStr) {
+  const min = parseFloat(minStr);
+  const max = parseFloat(maxStr);
+  if (minStr !== '' && maxStr !== '' && isFinite(min) && isFinite(max) && min < max) return [min, max];
+  return undefined;
+}
+ 
+if (typeof module !== 'undefined') {
+  module.exports = { numOrNull, parseSheetRowsToGroups, classifyGroups, buildDatasetFromRows, getDisplayName, hexToRgba, buildTraces, csvFromDatasets, resolveAxisRange, SYMBOLS };
+}
+ 
+// =====================================================================
+// Estado, presets e ligação com a interface
+// =====================================================================
+ 
+const DATASET_PALETTE = ['#000000', '#1F6F5C', '#B5533C', '#3E6B9C', '#6B5CA5', '#8A8F00'];
+const STORAGE_KEY = 'pkchart_style_prefs_v1';
+ 
+const STYLE_FIELD_IDS = [
+  'inTitle', 'inXLabel', 'inYLabel', 'inFontFamily', 'inFontSize', 'inTitleFontSize', 'inLegendFontSize',
+  'inXScale', 'inYScale', 'inXMin', 'inXMax', 'inYMin', 'inYMax',
+  'inRibbonAlpha', 'inBgColor', 'inTextColor', 'inGridColor', 'inAxisColor', 'inShowGrid',
+  'inMarkerSize', 'inLineWidth', 'inErrorWidth', 'inChartHeight', 'inLegendPos'
+];
+ 
+const STYLE_DEFAULTS = {
+  inTitle: '', inXLabel: '', inYLabel: '', inFontFamily: "'IBM Plex Sans', sans-serif",
+  inFontSize: '13', inTitleFontSize: '18', inLegendFontSize: '12',
+  inXScale: 'linear', inYScale: 'linear', inXMin: '', inXMax: '', inYMin: '', inYMax: '',
+  inRibbonAlpha: '0.35', inBgColor: '#ffffff', inTextColor: '#12211e', inGridColor: '#e5e5e5', inAxisColor: '#333333', inShowGrid: true,
+  inMarkerSize: '8', inLineWidth: '2', inErrorWidth: '1.4', inChartHeight: '520', inLegendPos: 'tr'
+};
+ 
+const PRESETS = {
+  publicacao: {
+    fields: { inFontFamily: "'IBM Plex Sans', sans-serif", inFontSize: '13', inTitleFontSize: '18', inLegendFontSize: '11',
+      inRibbonAlpha: '0.22', inBgColor: '#ffffff', inTextColor: '#000000', inGridColor: '#e2e2e2', inAxisColor: '#000000',
+      inLineWidth: '2', inMarkerSize: '7', inErrorWidth: '1.2' },
+    palette: ['#000000', '#4d4d4d', '#8c8c8c', '#1a1a1a', '#666666', '#333333']
+  },
+  apresentacao: {
+    fields: { inFontFamily: "'IBM Plex Sans', sans-serif", inFontSize: '16', inTitleFontSize: '24', inLegendFontSize: '14',
+      inRibbonAlpha: '0.22', inBgColor: '#ffffff', inTextColor: '#12211e', inGridColor: '#e5e5e5', inAxisColor: '#12211e',
+      inLineWidth: '3', inMarkerSize: '10', inErrorWidth: '1.8' },
+    palette: DATASET_PALETTE.slice()
+  },
+  escuro: {
+    fields: { inFontFamily: "'IBM Plex Sans', sans-serif", inFontSize: '14', inTitleFontSize: '20', inLegendFontSize: '12',
+      inRibbonAlpha: '0.3', inBgColor: '#181c1a', inTextColor: '#edf2f0', inGridColor: '#333a37', inAxisColor: '#8fa39c',
+      inLineWidth: '2.5', inMarkerSize: '9', inErrorWidth: '1.6' },
+    palette: ['#f2f2f0', '#4fbfa0', '#e08e6d', '#8fb3de', '#b7a6e0', '#d8db6b']
+  }
+};
+ 
+let datasets = [];
+let nextId = 1;
+let redrawTimer = null;
+ 
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const datasetListEl = document.getElementById('datasetList');
+const warnBox = document.getElementById('warnBox');
+const stepStyle = document.getElementById('stepStyle');
+const stepChart = document.getElementById('stepChart');
+const chartDiv = document.getElementById('chartDiv');
+ 
+// ---- Boas-vindas / drag & drop ----
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length) handleFiles(e.target.files);
+  fileInput.value = '';
+});
+ 
+function showWarning(msg) {
+  warnBox.textContent = '⚠️ ' + msg;
+  warnBox.style.display = 'block';
+}
+function clearWarning() { warnBox.style.display = 'none'; }
+ 
+function handleFiles(fileList) {
+  const eraPrimeiraCarga = datasets.length === 0;
+  const arquivos = Array.from(fileList).filter(f => /\.xlsx$/i.test(f.name));
+  if (arquivos.length === 0) { showWarning('Selecione arquivo(s) no formato .xlsx.'); return; }
+ 
+  let restantes = arquivos.length;
+  arquivos.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+        const cor = DATASET_PALETTE[datasets.length % DATASET_PALETTE.length];
+        const ds = buildDatasetFromRows(rows, file.name, nextId++, cor);
+        datasets.push(ds);
+ 
+        if (!ds.ok) {
+          showWarning(
+            `"${file.name}": não foi possível identificar automaticamente as 3 curvas esperadas (Faixa, Média, Observado).\n` +
+            'Curvas encontradas: ' + ds.allCurveNames.join(' | ')
+          );
+        }
+ 
+        if (eraPrimeiraCarga && datasets.length === 1) {
+          if (!document.getElementById('inXLabel').value) document.getElementById('inXLabel').value = ds.timeHeader;
+          if (!document.getElementById('inYLabel').value) document.getElementById('inYLabel').value = ds.concHeader;
+        }
+      } catch (err) {
+        showWarning(`Erro ao ler "${file.name}": ${err.message}`);
+      } finally {
+        restantes -= 1;
+        if (restantes === 0) {
+          renderDatasetList();
+          stepStyle.style.display = 'block';
+          stepChart.style.display = 'block';
+          scheduleRedraw();
+        }
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+ 
+function renderDatasetList() {
+  datasetListEl.innerHTML = '';
+  datasets.forEach(ds => {
+    const row = document.createElement('div');
+    row.className = 'dataset-row';
+ 
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = ds.color;
+    colorInput.title = 'Cor desta curva';
+    colorInput.addEventListener('input', (e) => { ds.color = e.target.value; scheduleRedraw(); });
+ 
+    const main = document.createElement('div');
+    main.className = 'dataset-main';
+ 
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.value = ds.label;
+    labelInput.addEventListener('input', (e) => { ds.label = e.target.value.trim() || ds.fileName; scheduleRedraw(); });
+ 
+    const summary = document.createElement('div');
+    summary.className = 'dataset-summary' + (ds.ok ? '' : ' warn-text');
+    summary.textContent = ds.ok
+      ? `${ds.allCurveNames.length} curvas · ${ds.obsKeys.length} observado(s)`
+      : `⚠ padrão não identificado (${ds.allCurveNames.length} curvas encontradas)`;
+ 
+    main.appendChild(labelInput);
+    main.appendChild(summary);
+ 
+    if (ds.ok) {
+      const renameDetails = document.createElement('details');
+      renameDetails.className = 'legend-rename';
+      const renameSummary = document.createElement('summary');
+      renameSummary.textContent = 'Renomear legenda';
+      const grid = document.createElement('div');
+      grid.className = 'settings-grid';
+ 
+      const criarCampoLegenda = (chave, rotulo) => {
+        const div = document.createElement('div');
+        const lab = document.createElement('label');
+        lab.textContent = rotulo;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = ds.legendNames[chave];
+        inp.addEventListener('input', (e) => { ds.legendNames[chave] = e.target.value.trim() || chave; scheduleRedraw(); });
+        div.appendChild(lab); div.appendChild(inp);
+        grid.appendChild(div);
+      };
+      criarCampoLegenda(ds.faixaKey, 'Faixa (ribbon)');
+      criarCampoLegenda(ds.mediaKey, 'Média (linha)');
+      ds.obsKeys.forEach((k, i) => criarCampoLegenda(k, ds.obsKeys.length > 1 ? `Observado ${i + 1}` : 'Observado'));
+ 
+      renameDetails.appendChild(renameSummary);
+      renameDetails.appendChild(grid);
+      main.appendChild(renameDetails);
+    }
+ 
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'icon-btn';
+    removeBtn.type = 'button';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remover este arquivo';
+    removeBtn.addEventListener('click', () => {
+      datasets = datasets.filter(d => d.id !== ds.id);
+      renderDatasetList();
+      if (datasets.length === 0) {
+        stepStyle.style.display = 'none';
+        stepChart.style.display = 'none';
+        clearWarning();
+      } else {
+        scheduleRedraw();
+      }
+    });
+ 
+    row.appendChild(colorInput);
+    row.appendChild(main);
+    row.appendChild(removeBtn);
+    datasetListEl.appendChild(row);
+  });
+}
+ 
+// ---- Campos de estilo: leitura, escrita, presets, persistência ----
+function readStyle() {
+  const g = id => document.getElementById(id);
+  return {
+    inTitle: g('inTitle').value, inXLabel: g('inXLabel').value, inYLabel: g('inYLabel').value,
+    inFontFamily: g('inFontFamily').value, inFontSize: g('inFontSize').value,
+    inTitleFontSize: g('inTitleFontSize').value, inLegendFontSize: g('inLegendFontSize').value,
+    inXScale: g('inXScale').value, inYScale: g('inYScale').value,
+    inXMin: g('inXMin').value, inXMax: g('inXMax').value, inYMin: g('inYMin').value, inYMax: g('inYMax').value,
+    inRibbonAlpha: g('inRibbonAlpha').value, inBgColor: g('inBgColor').value, inTextColor: g('inTextColor').value,
+    inGridColor: g('inGridColor').value, inAxisColor: g('inAxisColor').value, inShowGrid: g('inShowGrid').checked,
+    inMarkerSize: g('inMarkerSize').value, inLineWidth: g('inLineWidth').value, inErrorWidth: g('inErrorWidth').value,
+    inChartHeight: g('inChartHeight').value, inLegendPos: g('inLegendPos').value
+  };
+}
+ 
+function writeStyle(style, { keepText } = {}) {
+  Object.keys(style).forEach(id => {
+    if (keepText && ['inTitle', 'inXLabel', 'inYLabel'].includes(id)) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = !!style[id];
+    else el.value = style[id];
+  });
+  updateRangeReadouts();
+}
+ 
+function updateRangeReadouts() {
+  ['inRibbonAlpha', 'inMarkerSize', 'inLineWidth', 'inErrorWidth', 'inChartHeight', 'inFontSize', 'inTitleFontSize', 'inLegendFontSize'].forEach(id => {
+    const el = document.getElementById(id);
+    const out = document.getElementById(id + 'Val');
+    if (el && out) out.textContent = el.value;
+  });
+}
+ 
+function applyDatasetPalette(palette) {
+  datasets.forEach((ds, i) => { ds.color = palette[i % palette.length]; });
+  renderDatasetList();
+}
+ 
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const preset = PRESETS[btn.getAttribute('data-preset')];
+    if (!preset) return;
+    writeStyle(preset.fields, { keepText: true });
+    applyDatasetPalette(preset.palette);
+    scheduleRedraw();
+  });
+});
+ 
+document.getElementById('btnResetStyle').addEventListener('click', () => {
+  writeStyle(STYLE_DEFAULTS, { keepText: true });
+  applyDatasetPalette(DATASET_PALETTE);
+  scheduleRedraw();
+});
+ 
+document.getElementById('btnForget').addEventListener('click', () => {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  writeStyle(STYLE_DEFAULTS, { keepText: true });
+  scheduleRedraw();
+});
+ 
+function saveStylePrefs() {
+  const remember = document.getElementById('inRemember').checked;
+  if (!remember) return;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(readStyle())); } catch (e) {}
+}
+ 
+function loadStylePrefsOnBoot() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) writeStyle(JSON.parse(raw), { keepText: true });
+  } catch (e) {}
+}
+ 
+STYLE_FIELD_IDS.forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const evt = (el.tagName === 'SELECT' || el.type === 'checkbox') ? 'change' : 'input';
+  el.addEventListener(evt, () => { updateRangeReadouts(); scheduleRedraw(); });
+});
+ 
+function scheduleRedraw() {
+  clearTimeout(redrawTimer);
+  redrawTimer = setTimeout(() => { drawChart(); saveStylePrefs(); }, 150);
+}
+ 
+function legendPosition(code) {
+  switch (code) {
+    case 'tl': return { x: 0.01, y: 0.99, xanchor: 'left', yanchor: 'top' };
+    case 'br': return { x: 0.99, y: 0.01, xanchor: 'right', yanchor: 'bottom' };
+    case 'bl': return { x: 0.01, y: 0.01, xanchor: 'left', yanchor: 'bottom' };
+    default: return { x: 0.99, y: 0.99, xanchor: 'right', yanchor: 'top' };
+  }
+}
+ 
+function drawChart() {
+  const validDatasets = datasets.filter(d => d.ok);
+  if (validDatasets.length === 0) {
+    Plotly.purge(chartDiv);
+    chartDiv.innerHTML = '<div id="chartEmpty">Nenhum arquivo com o padrão esperado foi carregado ainda.</div>';
+    return;
+  }
+  if (chartDiv.querySelector('#chartEmpty')) chartDiv.innerHTML = '';
+ 
+  const s = readStyle();
+  const opts = {
+    ribbonAlpha: parseFloat(s.inRibbonAlpha), lineWidth: parseFloat(s.inLineWidth),
+    markerSize: parseInt(s.inMarkerSize, 10), errorWidth: parseFloat(s.inErrorWidth)
+  };
+  const traces = buildTraces(validDatasets, opts);
+  const legendPos = legendPosition(s.inLegendPos);
+  const xLabel = s.inXLabel || validDatasets[0].timeHeader;
+  const yLabel = s.inYLabel || validDatasets[0].concHeader;
+ 
+  chartDiv.style.height = s.inChartHeight + 'px';
  
   const layout = {
-    title: title ? { text: title, font: { size: titleFontSize, family: fontFamily, color: textColor } } : undefined,
+    title: s.inTitle ? { text: s.inTitle, font: { size: parseInt(s.inTitleFontSize, 10), family: s.inFontFamily, color: s.inTextColor } } : undefined,
     xaxis: {
-      title: { text: xLabel },
-      gridcolor: gridColor, showgrid: showGrid,
-      zeroline: false, showline: true, linecolor: axisColor
+      title: { text: xLabel }, type: s.inXScale, gridcolor: s.inGridColor, showgrid: s.inShowGrid,
+      zeroline: false, showline: true, linecolor: s.inAxisColor, range: resolveAxisRange(s.inXMin, s.inXMax)
     },
     yaxis: {
-      title: { text: yLabel },
-      gridcolor: gridColor, showgrid: showGrid,
-      zeroline: false, showline: true, linecolor: axisColor
+      title: { text: yLabel }, type: s.inYScale, gridcolor: s.inGridColor, showgrid: s.inShowGrid,
+      zeroline: false, showline: true, linecolor: s.inAxisColor, range: resolveAxisRange(s.inYMin, s.inYMax)
     },
-    plot_bgcolor: bgColor,
-    paper_bgcolor: bgColor,
-    font: { color: textColor, family: fontFamily, size: fontSize },
-    legend: Object.assign({ bgcolor: bgColor, bordercolor: axisColor, borderwidth: 1, font: { size: legendFontSize } }, legendPos),
-    margin: { t: title ? titleFontSize + 40 : 20, r: 30, b: 60, l: 70 },
+    plot_bgcolor: s.inBgColor, paper_bgcolor: s.inBgColor,
+    font: { color: s.inTextColor, family: s.inFontFamily, size: parseInt(s.inFontSize, 10) },
+    legend: Object.assign({ bgcolor: s.inBgColor, bordercolor: s.inAxisColor, borderwidth: 1, font: { size: parseInt(s.inLegendFontSize, 10) } }, legendPos),
+    margin: { t: s.inTitle ? parseInt(s.inTitleFontSize, 10) + 40 : 24, r: 30, b: 60, l: 70 },
     hovermode: 'closest'
   };
  
-  Plotly.newPlot('chartDiv', traces, layout, {
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToRemove: ['lasso2d', 'select2d']
-  });
+  Plotly.newPlot(chartDiv, traces, layout, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] });
 }
  
-function downloadImage() {
-  const gd = document.getElementById('chartDiv');
-  Plotly.downloadImage(gd, {
-    format: 'png',
-    filename: outputBaseName,
-    width: 1200,
-    height: 700,
-    scale: 2
-  });
+function baseFileName() {
+  const validDatasets = datasets.filter(d => d.ok);
+  return validDatasets.length === 1 ? validDatasets[0].label : 'grafico_pk_comparacao';
 }
+ 
+document.getElementById('btnPng').addEventListener('click', () => {
+  Plotly.downloadImage(chartDiv, { format: 'png', filename: baseFileName(), width: 1200, height: 700, scale: 2 });
+});
+document.getElementById('btnSvg').addEventListener('click', () => {
+  Plotly.downloadImage(chartDiv, { format: 'svg', filename: baseFileName(), width: 1200, height: 700 });
+});
+document.getElementById('btnCsv').addEventListener('click', () => {
+  const csv = csvFromDatasets(datasets.filter(d => d.ok));
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = baseFileName() + '_dados.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+document.getElementById('btnClearAll').addEventListener('click', () => {
+  datasets = [];
+  renderDatasetList();
+  stepStyle.style.display = 'none';
+  stepChart.style.display = 'none';
+  clearWarning();
+  Plotly.purge(chartDiv);
+});
+ 
+// ---- Inicialização ----
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof XLSX === 'undefined' || typeof Plotly === 'undefined') {
+    showWarning('Não foi possível carregar as bibliotecas necessárias (SheetJS/Plotly). Verifique sua conexão e recarregue a página.');
+    dropzone.style.pointerEvents = 'none';
+    dropzone.style.opacity = '0.5';
+    return;
+  }
+  loadStylePrefsOnBoot();
+});
 </script>
 </body>
 </html>
- 
